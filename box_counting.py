@@ -50,6 +50,40 @@ def occupancy_grid(ifs, device, grid, points, steps, burn_in, seed):
     return counts > 0, cell, view
 
 
+def moran_estimate(ifs):
+    """Solve sum_i r_i^D = 1 with r_i = sqrt(|det A_i|), by bisection.
+
+    This is Moran's equation, and it is EXACT when the maps are similarities
+    satisfying the open set condition -- which is why it pins the Sierpinski
+    triangle at log3/log2.
+
+    For the fern it is only an estimate. sqrt(|det A|) is the geometric-mean
+    contraction of an affine map, so it throws away the anisotropy (f3 and f4
+    squash much harder along one axis than the other) and it ignores the overlap
+    between the maps' images. Agreement with the box count is therefore a
+    cross-check from an independent direction, not a proof.
+
+    Maps with det = 0 collapse the plane onto a line and are skipped: the fern's
+    stem map f1 is one of these, and a line cannot raise a dimension already
+    above 1.
+    """
+    rs = []
+    for A in ifs["A"]:
+        det = A[0][0] * A[1][1] - A[0][1] * A[1][0]
+        r = abs(det) ** 0.5
+        if r > 0:
+            rs.append(r)
+
+    lo, hi = 0.0, 4.0
+    for _ in range(200):
+        mid = (lo + hi) / 2
+        if sum(r ** mid for r in rs) > 1.0:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2
+
+
 def box_counts(occ, scales):
     """N(e) for each box size, in pixels, via max-pooling the occupancy grid."""
     x = occ.float()[None, None]
@@ -107,11 +141,18 @@ def analyse(name, device, args):
     print(f"\nfit over box sizes {scales[lo_i]}..{scales[hi_i - 1]} px "
           f"({hi_i - lo_i} points)")
     print(f"  box-counting dimension D = {slope:.4f}   (R^2 = {r2:.5f})")
+
+    moran = moran_estimate(ifs)
     if ifs["exact_dim"] is not None:
         exact = ifs["exact_dim"]
-        print(f"  exact (Moran)            = {exact:.4f}")
+        print(f"  Moran (exact here)       = {exact:.4f}")
         print(f"  error                    = {abs(slope - exact):.4f} "
               f"({abs(slope - exact) / exact * 100:.2f}%)")
+    else:
+        print(f"  self-affine Moran estimate = {moran:.4f}   "
+              f"(cross-check only -- see moran_estimate docstring)")
+        print(f"  gap to measurement         = {abs(slope - moran):.4f} "
+              f"({abs(slope - moran) / moran * 100:.2f}%)")
 
     # ---- plot ------------------------------------------------------------
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.5))

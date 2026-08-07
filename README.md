@@ -91,6 +91,17 @@ images overlap, so Moran's equation does not apply. Box counting is the honest
 route, and the second panel of the output plot shows the local slope at every
 scale so the fitted range is visible rather than assumed.
 
+There is still a useful cross-check. Feeding Moran's equation the geometric-mean
+contraction of each map, `rᵢ = √|det Aᵢ|`, gives an estimate that ignores both the
+anisotropy and the overlap — approximate by construction, but arrived at from a
+completely different direction than counting boxes. `moran_estimate()` computes
+it. For the fern the two agree to 0.5%, which is a much stronger statement than
+either number alone.
+
+(f₁ is skipped in that estimate: `det = 0`, because the stem map collapses the
+plane onto a line segment. A line cannot raise a dimension that is already
+above 1.)
+
 ## Output
 
 `render_fern.py` writes three views, because the same data answers three
@@ -130,16 +141,42 @@ QOS, and rejects `--mem` requests.
 
 ## Results
 
-Fill in after the first successful run:
+Measured on Rangpur, one NVIDIA A100-PCIE-40GB, PyTorch 2.13.0+cu130.
 
 | quantity | value |
 |---|---|
-| orbits × steps | |
-| points plotted | |
-| chaos-game time (A100) | |
-| throughput | |
-| Sierpinski D (measured / exact) | / 1.5850 |
-| Barnsley fern D | |
+| orbits × steps | 1,000,000 × 200 |
+| points plotted | 180,000,000 |
+| chaos-game time | **0.71 s** |
+| throughput | **253.3 M points/s** |
+| attractor bounding box | x ∈ [−2.182, 2.656], y ∈ [0.003, 9.998] |
+
+Sampling fidelity — the share of plotted points landing under each map matches
+the probabilities it was given, to three decimals:
+
+| map | p | measured |
+|---|---|---|
+| f₁ stem | 0.01 | 0.010 |
+| f₂ leaflets | 0.85 | 0.850 |
+| f₃ left | 0.07 | 0.070 |
+| f₄ right | 0.07 | 0.070 |
+
+Dimension, from a 4096² occupancy grid:
+
+| attractor | box counting | reference | gap |
+|---|---|---|---|
+| Sierpinski triangle (control) | **1.5944** | 1.5850 exact (`log3/log2`) | 0.59% |
+| Barnsley fern | **1.8245** | 1.8336 self-affine Moran estimate | 0.50% |
+
+The control lands within 0.6% of an exactly known answer, so the pipeline is
+doing what it claims. The fern's 1.8245 then agrees to 0.5% with an estimate
+derived from the map determinants rather than from counting anything — two
+independent routes to the same number.
+
+A dimension near 1.82 is high but not surprising once you look at the
+`by_transform` image: the leaflets pack against each other densely enough that
+the attractor comes much closer to covering area than the thin outline
+suggests.
 
 ## Files
 

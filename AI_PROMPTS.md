@@ -37,7 +37,26 @@ fern's maps shear, compress anisotropically, and overlap, so no closed form
 applies. This is why `box_counting.py` measures the Sierpinski triangle (where
 the formula *is* exact) as a control before reporting a number for the fern.
 
-*[Add your own note here: did you check this claim yourself? How?]*
+**Second correction — and this one is the interesting failure.** When suggesting
+the fern, the assistant also stated its dimension was "around 1.45". The
+measurement came back at **1.8245**, so that recalled figure was simply wrong.
+
+It was resolved by computing an independent estimate rather than by looking for a
+number to agree with: solving Moran's equation with `rᵢ = √|det Aᵢ|` gives
+**1.8336**, within 0.5% of the measurement. Two routes, one from the map
+coefficients and one from counting occupied boxes, agreeing — while the
+remembered "1.45" matches neither.
+
+The lesson worth writing up: **an AI's recalled numerical constants are the least
+reliable thing it produces**, and much less reliable than code it writes, because
+a wrong constant produces no error message. The defence is a control experiment
+(the Sierpinski triangle, dimension known exactly) plus an independent derivation
+— both of which are now in `box_counting.py`.
+
+*[Add your own note: verify the Sierpinski number against log3/log2 by hand, and
+try to find a published value for the fern. If you find 1.45 somewhere, work out
+what it is actually measuring — it may be a different fern parameter set or a
+different definition of dimension.]*
 
 ### Prompts used
 
